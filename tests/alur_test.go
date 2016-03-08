@@ -80,11 +80,13 @@ func TestManageStep(t *testing.T) {
 
 func TestRequestApprove(t *testing.T) {
 	q := alur.NewRequest(r, "user")
-	q.Start()
-
-	if len(q.CurrentSteps) == 0 {
-		t.Fatalf("Error. No CurrentSteps")
-	}
+	q.Data().Set("leaveday",10).Set("department","Finance")
+    toolkit.Println("Data: ", q.Data())
+    
+    e := q.Start()
+    if e!=nil {
+        t.Fatal("Fail to start: ", e.Error())    
+    }
 
 	t0 := time.Now()
     isOnApproval := false
@@ -106,12 +108,14 @@ func TestRequestApprove(t *testing.T) {
 
 func TestRequestReject(t *testing.T) {
 	q := alur.NewRequest(r, "user")
-	q.Start()
-
-	if len(q.CurrentSteps) == 0 {
-		t.Fatalf("Error. No CurrentSteps")
-	}
-
+	q.Data().Set("leaveday",10).Set("department","Finance")
+    toolkit.Println("Data: ", q.Data())
+    
+    e := q.Start()
+    if e!=nil {
+        t.Fatal("Fail to start: ", e.Error())    
+    }
+   
 	t0 := time.Now()
     isOnApproval := false
 	for !isOnApproval {

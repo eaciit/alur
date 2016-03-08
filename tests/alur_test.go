@@ -82,6 +82,11 @@ func TestRequest(t *testing.T) {
 	q := alur.NewRequest(r, "user")
 	q.Start()
 
+	if len(q.CurrentSteps) == 0 {
+		t.Fatalf("Error. No CurrentSteps")
+	}
+
+	x := 0
 	isOnApproval := false
 	for !isOnApproval {
 		for _, s := range q.CurrentSteps {
@@ -90,6 +95,10 @@ func TestRequest(t *testing.T) {
 				s.ApproveReject("admin", alur.Approve, "", nil)
 			} else {
 				time.Sleep(1 * time.Millisecond)
+				if x++; x > 5000 {
+					t.Fatalf("Error, timeout")
+					return
+				}
 			}
 		}
 	}

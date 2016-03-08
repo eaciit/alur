@@ -78,7 +78,7 @@ func TestManageStep(t *testing.T) {
 	}
 }
 
-func TestRequest(t *testing.T) {
+func TestRequestApprove(t *testing.T) {
 	q := alur.NewRequest(r, "user")
 	q.Start()
 
@@ -93,6 +93,32 @@ func TestRequest(t *testing.T) {
 			if s.StepID == "Approval" {
 				isOnApproval = true
 				s.ApproveReject("admin", alur.Approve, "", nil)
+			} else {
+				time.Sleep(1 * time.Millisecond)
+				if d:=time.Since(t0); d > (time.Duration)(5 * time.Second) {
+					t.Fatalf("Error, timeout")
+					return
+				}
+			}
+		}
+	}
+}
+
+func TestRequestReject(t *testing.T) {
+	q := alur.NewRequest(r, "user")
+	q.Start()
+
+	if len(q.CurrentSteps) == 0 {
+		t.Fatalf("Error. No CurrentSteps")
+	}
+
+	t0 := time.Now()
+    isOnApproval := false
+	for !isOnApproval {
+		for _, s := range q.CurrentSteps {
+			if s.StepID == "Approval" {
+				isOnApproval = true
+				s.ApproveReject("admin", alur.Reject, "just test", nil)
 			} else {
 				time.Sleep(1 * time.Millisecond)
 				if d:=time.Since(t0); d > (time.Duration)(5 * time.Second) {

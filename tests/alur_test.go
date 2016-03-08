@@ -71,7 +71,7 @@ func TestManageStep(t *testing.T) {
 		toolkit.Println("Request has been rejected")
 	}
 
-	r.UpdateSteps([]*alur.RouteStep{s1, s2, s3, s4})
+	r.UpdateSteps([]*alur.RouteStep{s1, s2, s3, s4, s5})
 	e := r.Verify()
 	if e != nil {
 		t.Fatalf("Error verify: %s", e.Error())

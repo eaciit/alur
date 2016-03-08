@@ -18,7 +18,12 @@ const(
 type Request struct{
     Route Route
     State RequestState
-    CurrentSteps []*RouteStep
+    CurrentSteps []*RequestStep
+}
+
+func NewRequest(route *Route, userId string) *Request{
+    q := new(Request)
+    return q
 }
 
 func (r *Request) Start(){

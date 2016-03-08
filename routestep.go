@@ -34,11 +34,16 @@ type RouteStep struct {
 	StepID   string
 	Title    string
 	StepType StepType
+    AutoStart bool 
     Approvals *ApprovalConfig
     Require []string
+    RequireReject []string
     Data interface{}
     
+    //--- all of below should be recorded as a function
     Pre interface{}
+    Save interface{}
+    Submit interface{}
     Exec interface{}
     Post interface{}
 }

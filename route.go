@@ -10,6 +10,8 @@ type Route struct {
 	Title  string
 	Owner  string
 	Enable bool
+    Port int
+    CodePath string
     
     Steps map[string]*RouteStep
 }

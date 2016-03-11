@@ -69,13 +69,15 @@ func TestManageStep(t *testing.T) {
 
 	s1 := new(alur.RouteStep)
 	s1.StepID = "Start"
+    s1.AutoStart = true
 	s1.StepType = alur.StepEntry
 
 	s2 := new(alur.RouteStep)
 	s2.Require = []string{"Start"}
 	s2.StepID = "Validate"
 	s2.StepType = alur.StepAction
-	s2.Pre = func(ctx *alur.Context) {
+	/*
+    s2.Pre = func(ctx *alur.Context) {
 		if ctx.Request.Data().GetInt("leaveday") <= 0 {
 			ctx.Request.Stop(alur.RequestCancelled, "Admin", "Leave Day can't be 0")
 		}
@@ -87,6 +89,7 @@ func TestManageStep(t *testing.T) {
 			ctx.Request.StepById("approval").SetApprover(0, "andiek.suncahyo").SetMinimalApprover(0, 1)
 		}
 	}
+    */
 
 	s3 := new(alur.RouteStep)
 	s3.Require = []string{"Validate"}
@@ -97,17 +100,21 @@ func TestManageStep(t *testing.T) {
 	s4.Require = []string{"Approval"}
 	s4.StepID = "Close"
 	s4.StepType = alur.StepAction
-	s4.Exec = func(ctx *alur.Context) {
+	/*
+    s4.Exec = func(ctx *alur.Context) {
 		toolkit.Println("Request has been approved")
 	}
+    */
 
 	s5 := new(alur.RouteStep)
 	s5.StepID = "Rejection"
 	s5.RequireReject = []string{"Approval"}
 	s5.StepType = alur.StepAction
-	s5.Exec = func(ctx *alur.Context) {
+	/*
+    s5.Exec = func(ctx *alur.Context) {
 		toolkit.Println("Request has been rejected")
 	}
+    */
 
 	r.UpdateSteps([]*alur.RouteStep{s1, s2, s3, s4, s5})
 	e := r.Verify()

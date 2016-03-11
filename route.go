@@ -1,12 +1,25 @@
 package alur
 
+import (
+   "github.com/eaciit/orm/v1"
+)
+
 type Route struct {
+    orm.ModelBase
 	ID     string
 	Title  string
 	Owner  string
 	Enable bool
     
     Steps map[string]*RouteStep
+}
+
+func (r *Route) TableName() string{
+    return "routes"
+}
+
+func (r *Route) RecordID() interface{}{
+    return r.ID
 }
 
 func (r *Route) initStep(){

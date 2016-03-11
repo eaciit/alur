@@ -66,5 +66,10 @@ const (
     Reject ApproveReject = 0
 )
 
-func (r *RequestStep) ApproveReject(userid string, state ApproveReject, reason string, data toolkit.M){
+func (r *RequestStep) Enter(data toolkit.M) error{
+    return nil
+}
+
+func (r *RequestStep) ApproveReject(userid string, state ApproveReject, reason string, data toolkit.M) error{
+    return nil
 }

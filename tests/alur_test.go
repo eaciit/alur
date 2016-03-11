@@ -3,9 +3,15 @@ package tests
 import (
 	"testing"
 	"time"
+	//"bufio"
+	"os"
+    "errors"
 
-	"github.com/eaciit/alur"
+    _ "github.com/eaciit/dbox/dbc/jsons"
+	"github.com/eaciit/dbox"
+    "github.com/eaciit/alur"
 	"github.com/eaciit/toolkit"
+    "path/filepath"
 )
 
 var (
@@ -18,11 +24,44 @@ func SkipIfNil(t *testing.T) {
 	}
 }
 
+func prepareConnection() error{
+    wd, e := os.Getwd()
+    if e!=nil {
+        return e
+    }
+    
+    wd = filepath.Join(wd, "..", "data")   
+    if fi, e := os.Stat(wd); e!=nil {
+        return e
+    } else if !fi.IsDir(){
+        return errors.New(toolkit.Sprintf("%s is not directory", wd))
+    }
+    
+    conn, _ := dbox.NewConnection("jsons", &dbox.ConnectionInfo{Host:wd,})
+    e = conn.Connect()
+    if e!=nil {
+        return errors.New(toolkit.Sprintf("Unable to connect: %s", e.Error()))
+    }
+    
+    alur.SetDb(conn)
+    return nil
+}
+
 func TestRoute(t *testing.T) {
-	r := new(alur.Route)
+	r = new(alur.Route)
 	r.ID = "wf_simple"
 	r.Title = "Simple Workflow"
 	r.Enable = true
+    
+    e := prepareConnection()
+    if e!=nil {
+        t.Fatalf("Error connection: %s", e.Error())
+    }
+    
+    e = alur.Db().Save(r)
+    if e!=nil {
+        t.Fatalf("Error save: %s", e.Error())
+    }
 }
 
 func TestManageStep(t *testing.T) {
@@ -41,6 +80,7 @@ func TestManageStep(t *testing.T) {
 			ctx.Request.Stop(alur.RequestCancelled, "Admin", "Leave Day can't be 0")
 		}
 	}
+    
 	s2.Exec = func(ctx *alur.Context) {
 		dept := ctx.Request.Data().GetString("department")
 		if dept == "it" {
@@ -74,60 +114,78 @@ func TestManageStep(t *testing.T) {
 	if e != nil {
 		t.Fatalf("Error verify: %s", e.Error())
 	}
+    
+    esave := alur.Db().Save(r)
+    if esave!=nil {
+        t.Fatalf("Error save: %s", esave.Error())
+    }
 }
 
 func TestRequestApprove(t *testing.T) {
-	q := alur.NewRequest(r, "user")
-	q.Data().Set("leaveday",10).Set("department","Finance")
-    toolkit.Println("Data: ", q.Data())
-    
-    e := q.Start()
-    if e!=nil {
-        t.Fatal("Fail to start: ", e.Error())    
-    }
+	//--- Get data
+	user := "Arief"
+	if user == "" {
+		t.Fatalf("User can't be empty")
+	}
 
+	leaveDay := 5
+	if leaveDay == 0 {
+		t.Fatalf("Leave day should be > 0")
+	}
+
+	q := alur.NewRequest(r, user)
+	q.Data().Set("leaveday", leaveDay).Set("verbose", true)
+	toolkit.Println("Data: ", q.Data())
+
+	e := q.Start()
+	if e != nil {
+		t.Fatal("Fail to start: ", e.Error())
+	}
+	waitForEntry(q, t)
+    waitForApproval(q, t, "admin", alur.Approve, "test")
+}
+
+func waitForEntry(r *alur.Request, t *testing.T) {
 	t0 := time.Now()
-    isOnApproval := false
-	for !isOnApproval {
-		for _, s := range q.CurrentSteps {
-			if s.StepID == "Approval" {
-				isOnApproval = true
-				s.ApproveReject("admin", alur.Approve, "", nil)
-			} else {
-				time.Sleep(1 * time.Millisecond)
-				if d:=time.Since(t0); d > (time.Duration)(5 * time.Second) {
-					t.Fatalf("Error, timeout")
-					return
-				}
+	for {
+		s := r.CurrentStep("Start")
+		if s == nil {
+			time.Sleep(1 * time.Millisecond)
+			if time.Since(t0) > (5 * time.Second) {
+				t.Fatalf("Waiting for Entry Timeout")
+				return
+			}
+		} else {
+			e := s.Enter(toolkit.M{}.Set("Department", "IT"))
+			if e != nil {
+				t.Fatalf("Entry error: %s", e.Error())
+				return
+			}
+			return
+		}
+	}
+}
+
+func waitForApproval(r *alur.Request, t *testing.T, user string, approval alur.ApproveReject, reason string) {
+	t0 := time.Now()
+	for {
+		s := r.CurrentStep("Approval")
+		if s == nil {
+			time.Sleep(1 * time.Millisecond)
+			if time.Since(t0) > (5 * time.Second) {
+				t.Fatalf("Waiting for Approval Timeout")
+				return
+			}
+		} else {
+			e := s.ApproveReject(user, approval, reason, nil)
+			if e != nil {
+				t.Fatalf("ApproveReject fails. %s", e.Error())
+				return
 			}
 		}
 	}
 }
 
-func TestRequestReject(t *testing.T) {
-	q := alur.NewRequest(r, "user")
-	q.Data().Set("leaveday",10).Set("department","Finance")
-    toolkit.Println("Data: ", q.Data())
-    
-    e := q.Start()
-    if e!=nil {
-        t.Fatal("Fail to start: ", e.Error())    
-    }
-   
-	t0 := time.Now()
-    isOnApproval := false
-	for !isOnApproval {
-		for _, s := range q.CurrentSteps {
-			if s.StepID == "Approval" {
-				isOnApproval = true
-				s.ApproveReject("admin", alur.Reject, "just test", nil)
-			} else {
-				time.Sleep(1 * time.Millisecond)
-				if d:=time.Since(t0); d > (time.Duration)(5 * time.Second) {
-					t.Fatalf("Error, timeout")
-					return
-				}
-			}
-		}
-	}
+func TestClose(t *testing.T){
+    alur.CloseDb()
 }

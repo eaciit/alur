@@ -17,7 +17,7 @@
 			"mode": "test",
 			"program": "${workspaceRoot}/tests",
 			"env": {},
-			"args": []
+			"args": ["-test.v"]
         }
 	]
 }
